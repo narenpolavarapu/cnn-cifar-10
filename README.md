@@ -1,176 +1,167 @@
-# 🧠 CIFAR-10 CNN — From Convolution Basics to Real-World Error Analysis
+# 🧠 CNN Image Classification — CIFAR-10
 
-> **A hands-on PyTorch CNN project exploring image classification, BatchNorm, learning-rate scheduling, checkpointing, augmentation, and model error analysis — built as part of my journey toward AI Engineering and AI Security.**
+A complete deep-learning image classification project built with **PyTorch**, covering CNN fundamentals, regularization, normalization, learning-rate scheduling, residual networks, error analysis, and transfer learning with a pretrained ResNet18.
+
+This project was developed as part of my **AI/ML → AI Security learning roadmap**, with an emphasis on understanding *why* each technique works rather than treating neural networks as black boxes.
 
 ---
 
-## 🚀 Project Overview
+## 📌 Project Overview
 
-This project started with a simple question:
+The goal of this project is to build and progressively improve image-classification models on the **CIFAR-10** dataset while understanding the underlying deep-learning concepts.
 
-**How does a Convolutional Neural Network actually learn to recognize images?**
+The project progresses from a simple CNN trained from scratch to a deeper residual network and finally to **transfer learning with a pretrained ResNet18**.
 
-Instead of jumping directly into a high-performance architecture, I built the pipeline progressively and investigated what happens when different components are introduced.
-
-The project uses **CIFAR-10**, a real-world image classification dataset containing 60,000 RGB images across 10 classes.
-
-The progression was:
+### Main progression
 
 ```text
-CNN Fundamentals
-      ↓
-Baseline CNN
-      ↓
+Basic CNN
+   ↓
 Data Augmentation
-      ↓
+   ↓
 Batch Normalization
-      ↓
-Validation + Checkpointing
-      ↓
+   ↓
+Checkpointing
+   ↓
 Learning-Rate Scheduling
-      ↓
-Best Model Selection
-      ↓
-Confusion Matrix
-      ↓
-Visual Error Analysis
-      ↓
-Confidence Analysis
+   ↓
+Residual Networks
+   ↓
+Global Average Pooling
+   ↓
+Transfer Learning
+   ↓
+Feature Extraction
+   ↓
+Fine-Tuning
 ```
 
-The final model achieved:
+The final fine-tuned ResNet18 achieved:
 
-> 🏆 **69.46% test accuracy**
-
-More importantly, the project was about understanding **why** the model behaves the way it does, rather than simply maximizing an accuracy number.
+> **76.02% test accuracy on CIFAR-10**
 
 ---
 
-## 🎯 Goals
-
-The main goals of this project were to understand:
-
-- How convolutional layers process images
-- How channels and feature maps work
-- How pooling changes spatial dimensions
-- How CNN outputs become class predictions
-- How Cross-Entropy Loss works with logits
-- How backpropagation updates convolutional filters
-- How DataLoaders feed batches into a model
-- How Batch Normalization affects optimization
-- How Dropout affects training
-- How data augmentation affects generalization
-- Why validation and test sets must be separated
-- How checkpointing prevents us from keeping a bad final epoch
-- How learning-rate scheduling affects optimization
-- How to interpret confusion matrices
-- How to investigate individual model failures
-- Why confidence does not necessarily mean correctness
-
----
-
-# 📦 Dataset — CIFAR-10
+# 📊 Dataset — CIFAR-10
 
 CIFAR-10 contains:
 
-- **60,000** color images
-- **50,000** training images
-- **10,000** test images
-- Image size: **32 × 32**
-- Channels: **3 (RGB)**
-- Classes: **10**
+- **60,000 color images**
+- **32 × 32 pixels**
+- **3 RGB channels**
+- **10 classes**
+- 50,000 training images
+- 10,000 test images
 
-### Classes
+The 10 classes are:
 
-| Label | Class |
-|---:|---|
-| 0 | ✈️ Airplane |
-| 1 | 🚗 Automobile |
-| 2 | 🐦 Bird |
-| 3 | 🐱 Cat |
-| 4 | 🦌 Deer |
-| 5 | 🐶 Dog |
-| 6 | 🐸 Frog |
-| 7 | 🐴 Horse |
-| 8 | 🚢 Ship |
-| 9 | 🚚 Truck |
+```text
+airplane
+automobile
+bird
+cat
+deer
+dog
+frog
+horse
+ship
+truck
+```
 
-Each class contains 6,000 images, making CIFAR-10 balanced.
+Each class contains 6,000 images in total.
+
+For this project, the original training set was split into:
+
+```text
+45,000 → Training
+5,000  → Validation
+10,000 → Test
+```
+
+The train/validation split used a fixed random seed for reproducibility.
 
 ---
 
-# 🧪 Data Pipeline
+# 🧠 What I Learned
 
-The original 50,000 training images were split into:
+## 1. CNN Fundamentals
+
+The project started by building CNNs from first principles.
+
+Topics covered:
+
+- Convolution
+- Kernels / filters
+- Feature maps
+- Input channels
+- Output channels
+- RGB images
+- Stride
+- Padding
+- Pooling
+- Flattening
+- Fully connected layers
+
+### Tensor shape reasoning
+
+A typical CIFAR-10 batch:
 
 ```text
-Training:   45,000
-Validation:  5,000
-Test:       10,000
-```
-
-The train/validation split was made reproducible using:
-
-```python
-torch.Generator().manual_seed(42)
-```
-
-The test set remained completely separate.
-
-### Tensor shape
-
-A batch enters the CNN as:
-
-```text
-[Batch, Channels, Height, Width]
+[batch, channels, height, width]
 
 [64, 3, 32, 32]
 ```
 
-where:
-
-- `64` = batch size
-- `3` = RGB channels
-- `32 × 32` = image dimensions
+The project repeatedly tracked tensor shapes through the network to understand how spatial dimensions and channels change.
 
 ---
 
-# 🧠 CNN Architecture
+# 🔬 Convolution Concepts
 
-The baseline architecture was intentionally kept small:
+I manually explored convolution before relying on `nn.Conv2d`.
 
-```text
-Input
-  │
-  ▼
-Conv2d(3 → 32)
-  │
-ReLU
-  │
-MaxPool
-  │
-Conv2d(32 → 64)
-  │
-ReLU
-  │
-MaxPool
-  │
-Flatten
-  │
-Linear
-  │
-10 class logits
-```
+Topics included:
 
-Implemented as:
+- Manual convolution
+- Multi-channel convolution
+- RGB filtering
+- `F.conv2d`
+- `nn.Conv2d`
+- Parameter counting
+- Output-size calculations
+
+For example:
 
 ```python
-nn.Sequential(
-    nn.Conv2d(3, 32, kernel_size=3, padding=1),
+nn.Conv2d(3, 4, kernel_size=3)
+```
+
+contains:
+
+```text
+4 filters
+× 3 input channels
+× 3 × 3 kernel
++ 4 biases
+
+= 112 parameters
+```
+
+This helped establish the relationship between convolution architecture and learnable parameters.
+
+---
+
+# 🏗️ Baseline CNN
+
+The first real CIFAR-10 model was:
+
+```python
+baseline_cnn = nn.Sequential(
+    nn.Conv2d(3, 32, 3, padding=1),
     nn.ReLU(),
     nn.MaxPool2d(2, 2),
 
-    nn.Conv2d(32, 64, kernel_size=3, padding=1),
+    nn.Conv2d(32, 64, 3, padding=1),
     nn.ReLU(),
     nn.MaxPool2d(2, 2),
 
@@ -179,152 +170,117 @@ nn.Sequential(
 )
 ```
 
-### Shape flow
+Parameter count:
 
 ```text
-[64, 3, 32, 32]
-        ↓
-[64, 32, 32, 32]
-        ↓
-[64, 32, 16, 16]
-        ↓
-[64, 64, 16, 16]
-        ↓
-[64, 64, 8, 8]
-        ↓
-[64, 4096]
-        ↓
-[64, 10]
+60,362
 ```
 
-Total parameters:
+### Baseline result
 
-**60,362**
+**Test accuracy: 53.04%**
+
+This provided the reference point for later improvements.
 
 ---
 
-# 📊 Experiment 1 — Baseline CNN
+# 🧪 Data Augmentation
 
-The first real experiment established a baseline.
+I experimented with image augmentation using:
 
-### Training
+- Random horizontal flipping
+- Random cropping
+- Padding
 
-The model was trained for 10 epochs using:
-
-- CrossEntropyLoss
-- SGD
-- Learning rate: `0.01`
-- No BatchNorm
-- No learning-rate scheduler
-- No checkpoint restoration
-
-### Result
-
-```text
-Test Accuracy: 53.04%
-Test Loss:     1.2872
-```
-
-This became our reference point.
-
----
-
-# 🔄 Experiment 2 — Data Augmentation
-
-To improve robustness to small spatial changes, the training data was augmented using:
+Example:
 
 ```python
-transforms.RandomHorizontalFlip()
-transforms.RandomCrop(32, padding=4)
+train_transform = transforms.Compose([
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomCrop(32, padding=4),
+    transforms.ToTensor()
+])
 ```
 
-The important idea here was:
+The purpose was to expose the model to slightly different versions of the same image and improve generalization.
 
-> The model should not memorize one exact pixel arrangement of an object.
+The augmentation experiment did not improve the model within the 10-epoch experiment, reaching approximately **47.06% validation accuracy**.
 
-However, the augmentation experiment did **not** automatically improve the model.
+This reinforced an important lesson:
 
-Best validation accuracy:
-
-```text
-47.06%
-```
-
-This was an important lesson:
-
-**A technique that often helps in deep learning is not guaranteed to help every model, dataset, or training configuration.**
+> Adding augmentation does not automatically improve accuracy. Its usefulness depends on the dataset, transformation choices, model, optimizer, and training setup.
 
 ---
 
-# 🧮 Experiment 3 — Batch Normalization
+# 📐 Batch Normalization
 
-Next, BatchNorm was introduced after the convolutional layers.
+Batch Normalization was then added after convolution layers.
 
-```text
-Conv
- ↓
-BatchNorm
- ↓
-ReLU
- ↓
-MaxPool
+```python
+nn.Conv2d(...)
+nn.BatchNorm2d(...)
+nn.ReLU()
 ```
 
-The BatchNorm model contained:
-
-**60,554 parameters**
-
-Only 192 additional learnable parameters came from BatchNorm.
-
-### What happened?
-
-BatchNorm dramatically accelerated optimization.
-
-The model reached:
+The CNN with BatchNorm had:
 
 ```text
-~46% validation accuracy
+60,554 parameters
 ```
 
-after the first epoch and continued improving.
+compared with:
 
-However, one run became unstable later in training, demonstrating another important lesson:
+```text
+60,362 parameters
+```
 
-> **Training behavior and evaluation behavior are not the same thing when BatchNorm is involved.**
+for the baseline.
 
-The model uses batch statistics during training and running statistics during evaluation.
+I also investigated the difference between:
+
+```python
+model.train()
+```
+
+and:
+
+```python
+model.eval()
+```
+
+for BatchNorm.
+
+This demonstrated that BatchNorm behaves differently during training and inference because training uses batch statistics while evaluation uses running statistics.
 
 ---
 
-# 💾 Experiment 4 — Checkpointing
+# 💾 Checkpointing
 
-Instead of blindly using the model from epoch 10, the best validation model was saved whenever validation accuracy improved.
+Instead of automatically using the final epoch, the model was checkpointed whenever validation accuracy improved.
 
 Conceptually:
 
-```python
-if val_acc > best_val_acc:
-    best_val_acc = val_acc
-    best_state = copy.deepcopy(model.state_dict())
-```
-
-This separates:
-
 ```text
-Training
-    ↓
-Validation → Select best checkpoint
-    ↓
-Test → Evaluate selected model
+Train
+  ↓
+Validation
+  ↓
+Is validation accuracy better?
+  ↓
+Yes → Save model
 ```
 
-This is important because the final epoch is **not necessarily the best model**.
+The best validation checkpoint was restored before testing.
+
+This established an important ML methodology:
+
+> **Validation selects the model. Test evaluates the selected model.**
 
 ---
 
-# 📉 Experiment 5 — Learning-Rate Scheduling
+# 📉 Learning-Rate Scheduling
 
-The next improvement was a `StepLR` scheduler:
+I introduced `StepLR` to reduce the learning rate during training.
 
 ```python
 StepLR(
@@ -334,377 +290,491 @@ StepLR(
 )
 ```
 
-The learning rate followed:
+The learning rate progressed approximately as:
 
 ```text
-Epoch 1–3    → 0.01000
-Epoch 4–6    → 0.00100
-Epoch 7–9    → 0.00010
-Epoch 10     → 0.00001
+Epochs 1–3  → 0.01
+Epochs 4–6  → 0.001
+Epochs 7–9  → 0.0001
+Epoch 10    → 0.00001
 ```
 
-The idea:
+The best checkpointed CNN reached:
 
-> Start with larger updates to learn quickly, then reduce the learning rate so the model can make smaller, more stable improvements.
+**69.54% validation accuracy**
 
-The optimizer update happens before the scheduler step:
+and:
 
-```text
-loss.backward()
-      ↓
-optimizer.step()
-      ↓
-scheduler.step()
-```
+**69.46% test accuracy**
+
+This was a major improvement over the original 53.04% baseline.
 
 ---
 
-# 🏆 Final Model
+# 🔍 CNN Error Analysis
 
-The final selected model combined:
+Rather than stopping at accuracy, I analyzed model behavior.
 
-- CNN
-- BatchNorm
-- SGD
-- StepLR
-- Validation checkpointing
+## Confusion Matrix
 
-The best checkpoint occurred at:
+The final CNN was evaluated using a confusion matrix to identify which classes were frequently confused.
 
-```text
-Epoch: 7
-Validation Accuracy: 69.54%
-```
+Important confusion patterns included:
 
-After restoring that checkpoint:
+- Cat ↔ Dog
+- Automobile ↔ Truck
+- Bird → Deer / Dog / Frog / Airplane
+- Ship → Airplane
 
-```text
-Test Accuracy: 69.46%
-Test Loss:     0.8948
-```
-
-### Improvement over baseline
-
-```text
-Baseline:  53.04%
-Final:     69.46%
-
-Improvement: +16.42 percentage points
-```
-
-The validation/test gap was only:
-
-```text
-69.54% - 69.46% = 0.08 percentage points
-```
-
-That gave us a useful indication that the selected checkpoint generalized similarly to the held-out test set.
+This showed that overall accuracy alone does not explain *where* the model struggles.
 
 ---
 
-# 📈 Experiment Summary
+# 🎯 Per-Class Accuracy
 
-| Experiment | Best/Final Validation | Test Accuracy |
-|---|---:|---:|
-| Baseline CNN | 53.46% | **53.04%** |
-| Data Augmentation | 47.06% | — |
-| BatchNorm + checkpoint | 63.90% | **63.83%** |
-| BatchNorm + StepLR + checkpoint | **69.54%** | **69.46%** |
-
-> Results are specific to this architecture, training configuration, random initialization, and 10-epoch training setup. They are not intended as a state-of-the-art CIFAR-10 benchmark.
-
----
-
-# 🔍 Confusion Matrix
-
-The final model produced:
-
-```text
-[[721, 20, 55, 22, 16,  6, 11,  9, 97, 43],
- [ 22,796,  8, 12,  1,  4,  7,  6, 42,102],
- [ 72,  5,536, 53,107, 84, 74, 38, 18, 13],
- [ 24, 10, 63,520, 75,178, 64, 27, 19, 20],
- [ 28,  4, 72, 62,657, 35, 55, 65, 18,  4],
- [ 18,  3, 49,169, 45,624, 22, 52, 12,  6],
- [  7,  2, 42, 74, 41, 25,787,  9,  8,  5],
- [ 18,  4, 34, 44, 65, 71,  9,740,  2, 13],
- [ 88, 45,  4, 13,  6,  8,  7,  5,785, 39],
- [ 39, 88,  7, 14,  7,  8,  9, 14, 34,780]]
-```
-
-Each row contains exactly 1,000 test examples.
-
----
-
-# 🎯 Per-Class Performance
+The final CNN achieved approximately:
 
 | Class | Accuracy |
 |---|---:|
-| ✈️ Airplane | 72.1% |
-| 🚗 Automobile | 79.6% |
-| 🐦 Bird | 53.6% |
-| 🐱 Cat | 52.0% |
-| 🦌 Deer | 65.7% |
-| 🐶 Dog | 62.4% |
-| 🐸 Frog | 78.7% |
-| 🐴 Horse | 74.0% |
-| 🚢 Ship | 78.5% |
-| 🚚 Truck | 78.0% |
+| Airplane | 72.1% |
+| Automobile | 79.6% |
+| Bird | 53.6% |
+| Cat | 52.0% |
+| Deer | 65.7% |
+| Dog | 62.4% |
+| Frog | 78.7% |
+| Horse | 74.0% |
+| Ship | 78.5% |
+| Truck | 78.0% |
 
-Overall:
+The weakest classes were primarily visually similar categories such as:
 
-**69.46%**
+```text
+cat / dog
+bird / other animals
+automobile / truck
+```
 
 ---
 
-# 🧩 What Is the Model Struggling With?
+# ⚠️ Confidence Analysis
 
-The confusion matrix reveals much more than a single accuracy number.
+I also investigated cases where the model was **very confident but wrong**.
 
-### 🐱 Cat ↔ 🐶 Dog
+Examples included predictions such as:
 
 ```text
-Cat → Dog: 178
-Dog → Cat: 169
+automobile → truck
+ship → automobile
+bird → airplane
+cat → truck
+deer → horse
 ```
 
-These errors were highly symmetric.
+Some incorrect predictions had confidence above **99%**.
 
-The model frequently encountered:
+This demonstrated an important distinction:
 
-- blurry images
-- unusual poses
-- unclear silhouettes
-- difficult backgrounds
-- very small visual details
+> **Softmax confidence is not the same thing as probability that the prediction is actually correct.**
 
-This suggests that the learned representation does not reliably separate some cat/dog examples.
+A neural network can be extremely confident and still be wrong.
 
 ---
 
-### 🚗 Automobile → 🚚 Truck
+# 🧠 Receptive Fields
 
-```text
-Automobile → Truck: 102
-Truck → Automobile: 88
-```
+The project also explored receptive fields.
 
-Again, there is substantial overlap.
+A neuron's receptive field represents the region of the original input that can influence its activation.
 
-At only **32×32 pixels**, shape, orientation, and background can make these classes difficult to distinguish.
+For example, stacking convolution and pooling layers progressively increases the effective receptive field.
 
----
-
-### 🐦 Bird → Other Classes
-
-Birds were one of the weaker classes:
-
-```text
-Bird accuracy: 53.6%
-```
-
-Common confusions included:
-
-```text
-Bird → Deer
-Bird → Dog
-Bird → Frog
-Bird → Airplane
-```
-
-This shows that a model can perform well overall while still having significant weaknesses on specific classes.
+This led to understanding why deeper CNNs can capture increasingly large-scale patterns.
 
 ---
 
-# 😵 High-Confidence Wrong Predictions
+# 🔗 Residual Networks
 
-One of the most interesting parts of the project was examining predictions where the model was **very confident but wrong**.
+The project then moved beyond the basic CNN architecture.
 
-Some examples reached approximately:
+We studied the problem of:
 
-```text
-99%+
-```
+- Vanishing gradients
+- Degradation in deeper networks
+- Difficulty training deeper architectures
 
-confidence while being incorrect.
-
-The top examples included:
+This introduced the key ResNet idea:
 
 ```text
-Automobile → Truck    99.21%
-Ship       → Automobile 99.06%
-Bird       → Airplane  99.05%
-Cat        → Truck     99.01%
-Deer       → Horse     98.39%
+Input
+  │
+  ├──────────────┐
+  │              │
+  ▼              │
+Layers           │
+  │              │
+  ▼              │
+F(x)             │
+  │              │
+  └────── + <────┘
+         │
+         ▼
+       F(x)+x
 ```
 
-This demonstrates an important ML concept:
-
-> **Softmax confidence is not the same thing as correctness probability.**
-
-A prediction with:
-
-```text
-softmax = 0.992
-```
-
-means the model assigned approximately 99.2% of its output probability mass to that class.
-
-It does **not** guarantee that the prediction is actually correct.
+Instead of forcing the layers to learn the entire transformation, residual blocks learn a residual function while the shortcut provides a direct path.
 
 ---
 
-# 📊 Confidence Analysis
+# 🧩 Projection Shortcuts
 
-Average confidence:
+When the input and output dimensions do not match, a projection shortcut can be used.
 
-```text
-Correct predictions: 73.67%
-Wrong predictions:   51.56%
-```
-
-So the model was generally more confident when correct.
-
-However:
+For example:
 
 ```text
-Highest confidence among wrong predictions: 99.21%
+32 channels
+   ↓
+1×1 convolution
+   ↓
+64 channels
 ```
 
-This is an important warning sign about model calibration and uncertainty.
+A stride can also be used to perform spatial downsampling.
 
-A model can be:
+This allowed the implementation of residual blocks that change both:
 
-```text
-confident + correct
-confident + wrong
-uncertain + correct
-uncertain + wrong
-```
-
-Understanding these cases becomes especially important in security-sensitive AI systems.
+- number of channels
+- spatial resolution
 
 ---
 
-# 🧠 What I Learned
+# 🌐 Global Average Pooling
 
-This project went beyond simply training a CNN.
+I also explored Global Average Pooling using:
 
-### CNN fundamentals
-
-I learned how:
-
-```text
-Images
-  ↓
-Convolution
-  ↓
-Feature Maps
-  ↓
-Activation
-  ↓
-Pooling
-  ↓
-Flattening
-  ↓
-Linear Layer
-  ↓
-Logits
-  ↓
-Prediction
+```python
+nn.AdaptiveAvgPool2d((1, 1))
 ```
 
-works mathematically and in PyTorch.
+For example:
 
-### Training
+```text
+[1, 128, 8, 8]
+        ↓
+[1, 128, 1, 1]
+        ↓
+[1, 128]
+```
 
-I practiced:
-
-- Forward propagation
-- Loss calculation
-- Backpropagation
-- Gradient inspection
-- Optimizer updates
-- DataLoader batching
-- Train/eval modes
-- Checkpointing
-- Learning-rate scheduling
-
-### Generalization
-
-I investigated:
-
-- Data augmentation
-- Validation vs test sets
-- Overfitting behavior
-- BatchNorm train/eval differences
-- Model selection
-
-### Model analysis
-
-I went beyond accuracy and examined:
-
-- Confusion matrices
-- Per-class accuracy
-- Specific error pairs
-- Individual misclassified images
-- Prediction confidence
-- High-confidence failures
+This significantly reduces the number of parameters in the final classifier compared with flattening the entire feature map.
 
 ---
 
-# 🔐 Why This Project Matters for AI Security
+# 🏗️ Mini-ResNet
 
-This project is also a foundation for my eventual transition into **AI Security**.
-
-Before attacking an AI system, I need to understand how it behaves normally.
-
-This project establishes that baseline.
-
-I now have a model where I understand:
+A custom Mini-ResNet was implemented using:
 
 ```text
-Architecture
-    ↓
-Training
-    ↓
-Optimization
-    ↓
-Validation
-    ↓
-Predictions
-    ↓
-Errors
-    ↓
-Confidence
+Input
+ ↓
+Conv + BatchNorm + ReLU
+ ↓
+Residual Block
+ ↓
+Residual Block
+ ↓
+Downsampling Residual Block
+ ↓
+Residual Block
+ ↓
+Downsampling Residual Block
+ ↓
+Residual Block
+ ↓
+Global Average Pooling
+ ↓
+Linear
+ ↓
+10 classes
 ```
 
-That creates the foundation for eventually asking security questions such as:
+Parameter count:
 
 ```text
-Can an attacker deliberately change an image
-without changing what a human sees?
-
-            ↓
-
-Can that cause the CNN to misclassify it?
-
-            ↓
-
-Can we generate such adversarial examples?
-
-            ↓
-
-How transferable are attacks?
-
-            ↓
-
-Can the model detect or defend against them?
+697,738
 ```
 
-Those questions belong to the next stage of the journey:
+### Result
 
-**Adversarial Machine Learning / AI Security.**
+**Test accuracy: 72.60%**
+
+This improved upon the previous best CNN result of 69.46%.
+
+However, the improvement cannot be attributed solely to residual connections because the architecture also changed in depth, width, BatchNorm usage, and classifier design.
+
+---
+
+# 🚀 Transfer Learning
+
+The final major section introduced **transfer learning**.
+
+Instead of training an image model entirely from scratch, I used a model pretrained on ImageNet:
+
+```python
+model = torchvision.models.resnet18(weights="DEFAULT")
+```
+
+The pretrained ResNet18 contains approximately:
+
+```text
+11.69 million parameters
+```
+
+and originally produces predictions for:
+
+```text
+1000 ImageNet classes
+```
+
+---
+
+# 🔄 Adapting ResNet18 to CIFAR-10
+
+The original classifier was replaced:
+
+```python
+model.fc = nn.Linear(
+    model.fc.in_features,
+    10
+)
+```
+
+This changed:
+
+```text
+512 → 1000
+```
+
+into:
+
+```text
+512 → 10
+```
+
+for CIFAR-10 classification.
+
+---
+
+# 🧊 Feature Extraction
+
+First, the pretrained backbone was frozen:
+
+```python
+for param in model.parameters():
+    param.requires_grad = False
+```
+
+Only the new classifier was trained.
+
+Trainable parameters:
+
+```text
+5,130
+```
+
+The classifier was trained for 5 epochs.
+
+### Best validation result
+
+**46.20%**
+
+This demonstrated an important limitation:
+
+> Pretrained features are useful, but features learned for ImageNet are not automatically optimal for a different dataset.
+
+---
+
+# 🔥 Fine-Tuning
+
+The next step was to allow deeper ResNet layers to adapt to CIFAR-10.
+
+The following components were made trainable:
+
+```text
+layer3
+layer4
+fc
+```
+
+while earlier layers remained frozen.
+
+Approximately:
+
+```text
+10.5 million
+```
+
+parameters became trainable.
+
+A smaller learning rate was used:
+
+```text
+0.0001
+```
+
+because pretrained weights should generally be updated more carefully than a randomly initialized classifier.
+
+---
+
+# 🏆 Final Transfer-Learning Result
+
+The best fine-tuned checkpoint achieved:
+
+```text
+Best validation accuracy: 75.94%
+Best epoch: 5
+```
+
+After restoring the best validation checkpoint:
+
+```text
+Test accuracy: 76.02%
+Test loss:     0.8448
+```
+
+Correct predictions:
+
+```text
+7,602 / 10,000
+```
+
+Incorrect predictions:
+
+```text
+2,398 / 10,000
+```
+
+The validation and test results were extremely close:
+
+```text
+Validation: 75.94%
+Test:       76.02%
+Difference: 0.08 percentage points
+```
+
+---
+
+# 📈 Model Progression
+
+The major results were:
+
+| Model | Result |
+|---|---:|
+| Basic CNN | **53.04% test** |
+| CNN + BatchNorm + StepLR | **69.46% test** |
+| Mini-ResNet | **72.60% test** |
+| ResNet18 Feature Extraction | **46.20% validation** |
+| ResNet18 Fine-Tuning | **76.02% test** |
+
+### Overall improvement
+
+Compared with the original CNN:
+
+```text
+53.04%
+   ↓
+76.02%
+```
+
+Improvement:
+
+**+22.98 percentage points**
+
+---
+
+# 🧪 Experimental Lessons
+
+This project was not just about maximizing accuracy.
+
+Several important lessons came from the experiments.
+
+### 1. More complexity does not automatically mean better results
+
+A model can be deeper and still perform poorly if the training setup is inappropriate.
+
+### 2. Validation and test sets have different jobs
+
+```text
+Training → learn
+Validation → choose
+Test → final evaluation
+```
+
+### 3. Checkpointing matters
+
+The final epoch is not necessarily the best model.
+
+### 4. BatchNorm changes training and inference behavior
+
+`train()` and `eval()` must be used correctly.
+
+### 5. Augmentation is not guaranteed to improve performance
+
+The transformation must match the problem.
+
+### 6. Confidence can be misleading
+
+A model can be highly confident and completely wrong.
+
+### 7. Error analysis reveals more than accuracy
+
+A confusion matrix can expose specific weaknesses hidden by overall accuracy.
+
+### 8. Transfer learning can dramatically improve performance
+
+A pretrained model can provide much stronger representations than a small CNN trained from scratch.
+
+### 9. Fine-tuning matters
+
+Frozen ImageNet features achieved only 46.20% validation accuracy, while fine-tuning deeper layers increased performance to 75.94% validation / 76.02% test.
+
+---
+
+# 🔐 Connection to AI Security
+
+This project also establishes foundations for future **AI Security** work.
+
+Understanding how image classifiers behave is important before studying attacks against them.
+
+The project already explored concepts relevant to model security:
+
+- model confidence
+- high-confidence incorrect predictions
+- generalization
+- robustness
+- distribution changes
+- model architecture
+- transfer learning
+- model behavior under different inputs
+
+These concepts will later connect to:
+
+```text
+CNN
+ ↓
+Adversarial Examples
+ ↓
+Evasion Attacks
+ ↓
+Adversarial Training
+ ↓
+Robustness
+ ↓
+AI Security
+```
+
+The future Deep Learning Security project will build on these concepts rather than treating security as a completely separate subject.
 
 ---
 
@@ -715,133 +785,139 @@ Those questions belong to the next stage of the journey:
 - Torchvision
 - NumPy
 - Matplotlib
-- scikit-learn
+- CUDA
 - Jupyter Notebook
-- Kaggle
+- CIFAR-10
+- ResNet18
+- ImageNet pretrained weights
 
 ---
 
-# ▶️ Running the Project
-
-The main experiment is contained in:
-
-```text
-cnn-cifar-10.ipynb
-```
-
-The notebook contains the complete progression from dataset loading through final model evaluation and error analysis.
-
-### Dataset
-
-The CIFAR-10 dataset should be downloaded through `torchvision`.
-
-The dataset itself is intentionally **not stored in this repository**.
-
-This keeps the repository lightweight and reproducible.
-
----
-
-# 📁 Repository Structure
+# 📁 Project Structure
 
 ```text
 cnn-cifar-10/
 │
+├── cnn-cifar-10.ipynb
 ├── README.md
-└── cnn-cifar-10.ipynb
+└── .gitignore
 ```
 
-Dataset files and Kaggle-generated internal files are intentionally excluded.
+The CIFAR-10 dataset itself is intentionally **not included in the repository**.
 
 ---
 
-# 📌 Key Takeaways
+# ▶️ Running the Notebook
 
-The biggest lesson from this project wasn't:
+The notebook was developed in **Kaggle** using GPU acceleration.
 
-> "I got 69.46%."
+To reproduce the project:
 
-It was:
+1. Open the notebook in Kaggle.
+2. Enable GPU acceleration.
+3. Run the notebook from top to bottom.
+4. Allow torchvision to download CIFAR-10 if necessary.
+5. Allow torchvision to download pretrained ResNet18 weights when reaching the transfer-learning section.
 
-> **I learned how to investigate why a neural network performs the way it does.**
-
-A model is more than an accuracy number.
-
-You need to understand:
-
-```text
-What did it learn?
-Where does it fail?
-How confident is it?
-Does it generalize?
-Which classes overlap?
-What happens when training changes?
-What happens when evaluation changes?
-```
-
-Those questions become even more important when the model eventually becomes the **target of an attacker**.
+The project can also be adapted to another PyTorch environment with CUDA support.
 
 ---
 
-## 🚧 What's Next?
+# 🎯 Final Takeaways
 
-This project closes the first major part of my CNN journey.
+This project progressed from understanding a single convolution operation to training and analyzing modern pretrained deep-learning architectures.
 
-Next:
+The most important progression was:
 
 ```text
-Receptive Fields
-      ↓
-1×1 Convolutions
-      ↓
-Deeper CNNs
-      ↓
-Optimization Challenges
-      ↓
-Skip Connections
-      ↓
-ResNet
-      ↓
-Bottleneck Architectures
-      ↓
-Transfer Learning
-      ↓
-CNN Mastery
+Understand convolution
+        ↓
+Understand CNN architecture
+        ↓
+Train a real image classifier
+        ↓
+Improve training
+        ↓
+Analyze errors
+        ↓
+Understand receptive fields
+        ↓
+Understand residual connections
+        ↓
+Build a ResNet
+        ↓
+Understand transfer learning
+        ↓
+Feature extraction
+        ↓
+Fine-tuning
 ```
 
-Then the journey continues:
+The final result was a **76.02% CIFAR-10 test accuracy using a fine-tuned pretrained ResNet18**.
+
+More importantly, the project established the deep-learning foundations required for the next stage of the roadmap:
 
 ```text
-CNN
- ↓
-RNN
- ↓
-LSTM
- ↓
-Sequence Modeling
- ↓
-Deep Learning Security Project
- ↓
-NLP
- ↓
+CNNs ✅
+   ↓
+RNNs
+   ↓
+LSTMs
+   ↓
+GRUs
+   ↓
 Attention
- ↓
+   ↓
 Transformers
- ↓
+   ↓
+🔐 Deep Learning Security Project
+   ↓
+NLP
+   ↓
 LLMs
- ↓
-RAG / Agents
- ↓
+   ↓
 AI Engineering
- ↓
-AI Security & Red Teaming
+   ↓
+AI Security
 ```
 
 ---
 
-## 🔥 Status
+## 📚 Learning Status
 
-**Completed — CNN / CIFAR-10 Phase**
+**CNN / Computer Vision Chapter: COMPLETE ✅**
 
-**Best test accuracy: 69.46%**
+Concepts covered:
 
-**Next milestone: Deeper CNN architectures and ResNet fundamentals.**
+- Convolution
+- Channels
+- RGB
+- Conv2d
+- Stride
+- Padding
+- Pooling
+- Flattening
+- Linear layers
+- Logits
+- Softmax
+- Cross-Entropy
+- Backpropagation
+- DataLoader
+- CNN training
+- Data augmentation
+- Dropout
+- BatchNorm
+- Checkpointing
+- Learning-rate scheduling
+- Receptive fields
+- Residual networks
+- Projection shortcuts
+- Global Average Pooling
+- Mini-ResNet
+- Transfer learning
+- Feature extraction
+- Fine-tuning
+- Error analysis
+- Confidence analysis
+
+**Next:** Sequence Models → RNN → LSTM → GRU → Attention → Transformers
