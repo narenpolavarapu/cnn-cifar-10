@@ -919,5 +919,3 @@ Concepts covered:
 - Fine-tuning
 - Error analysis
 - Confidence analysis
-
-**Next:** Sequence Models → RNN → LSTM → GRU → Attention → Transformers
